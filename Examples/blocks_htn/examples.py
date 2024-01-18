@@ -34,19 +34,19 @@ def main(do_pauses=True):
     """
 
     # If we've changed to some other domain, this will change us back.
-    print(f"Changing current domain to {the_domain}, if it isn't that already.")
+    print(f" # Changing current domain to {the_domain}, if it isn't that already.")
     gtpyhop.current_domain = the_domain
 
     gtpyhop.print_domain()
 
-    print("\nLet's call find_plan on some simple things that should fail.\n")
+    print("\n # Let's call find_plan on some simple things that should fail.\n")
 
     state1 = gtpyhop.State('state1')
     state1.pos={'a':'b', 'b':'table', 'c':'table'}
     state1.clear={'c':True, 'b':False,'a':True}
     state1.holding={'hand':False}
 
-    state1.display('Initial state is')
+    state1.display('Here is the description for the initial state named')
 
     plan = gtpyhop.find_plan(state1,[('pickup','a')])
     th.check_result(plan,False)
@@ -58,10 +58,12 @@ def main(do_pauses=True):
     th.check_result(plan,False)
 
     th.pause(do_pauses)
+
     print("""
-Next, some simple things that should succeed. As a reminder, in state1,
+ # Next, some simple things that should succeed. As a reminder, in state1,
 block a is on block b, block b is on the table, and block c is on the table.
 """)
+
     
     plan = gtpyhop.find_plan(state1,[('pickup','c')])
     th.check_result(plan, [('pickup','c')])
@@ -78,20 +80,20 @@ block a is on block b, block b is on the table, and block c is on the table.
 
 
     print("""
-A Multigoal is a data structure that specifies desired values for some of
+ # A Multigoal is a data structure that specifies desired values for some of
 the state variables. Below, goal1a says we want the blocks in the
 configuration "c on b, b on a, a on the table".
 """)
 
-    state1.display("Initial state is")
+    state1.display('Here is the description for the initial state named')
 
     goal1a = gtpyhop.Multigoal('goal1a')
     goal1a.pos={'c':'b', 'b':'a', 'a':'table'}
 
-    goal1a.display()
+    goal1a.display("Here is a description of the goal named")
     
     print("""
-We don't have any methods for multigoals, but we have a task method for
+ # We don't have any methods for multigoals, but we have a task method for
 ('achieve' mg), the task of achieving multigoal mg. Here's ('achieve', goal1a):
     """)
 
@@ -106,14 +108,14 @@ We don't have any methods for multigoals, but we have a task method for
     th.pause(do_pauses)
 
     print("""
-goal1b says we want c on b on a. It omits "a on table", but it still has the
+ # goal1b says we want c on b on a. It omits "a on table", but it still has the
 same solution as goal1a, because "c on b on a" entails "a on table". 
 """)
 
     goal1b = gtpyhop.Multigoal('goal1b')
     goal1b.pos={'c':'b', 'b':'a'}
 
-    goal1b.display()
+    goal1b.display("Here is a description of the goal named")
 
     gtpyhop.verbose = 2
     plan2 = gtpyhop.find_plan(state1,[('achieve', goal1b)])
@@ -124,7 +126,7 @@ same solution as goal1a, because "c on b on a" entails "a on table".
 
 
     print("""
-Run find_plan on the famous Sussman anomaly.
+ # Run find_plan on the famous Sussman anomaly.
 """)
 
     sus_s0 = gtpyhop.State('Sussman anomaly initial state')
@@ -132,12 +134,12 @@ Run find_plan on the famous Sussman anomaly.
     sus_s0.clear={'c':True, 'a':False,'b':True}
     sus_s0.holding={'hand':False}
 
-    sus_s0.display()
+    sus_s0.display("Here is a description of the state named: ")
     
     sus_sg = gtpyhop.Multigoal('Sussman anomaly multigoal')
     sus_sg.pos={'a':'b', 'b':'c'}
 
-    sus_sg.display()
+    sus_sg.display("Here is a description of the multigoal named: ")
 
     expected = [('unstack', 'c', 'a'), ('putdown', 'c'), ('pickup', 'b'), ('stack', 'b', 'c'), ('pickup', 'a'), ('stack', 'a', 'b')] 
 
@@ -147,7 +149,7 @@ Run find_plan on the famous Sussman anomaly.
     th.pause(do_pauses)
 
     print("""
-Another initial state and two multigoals, goal2a and goal2b, such that
+ # Another initial state and two multigoals, goal2a and goal2b, such that
 ('achieve', goal2a) and ('achieve', goal2b) have the same solutions.
 """)
     
@@ -156,19 +158,19 @@ Another initial state and two multigoals, goal2a and goal2b, such that
     state2.clear={'a':True, 'c':False,'b':True, 'd':False}
     state2.holding={'hand':False}
 
-    state2.display('Initial state is')
+    state2.display('Here is the description for the initial state named: ')
     
     goal2a = gtpyhop.Multigoal('goal2a')
     goal2a.pos={'b':'c', 'a':'d', 'c':'table', 'd':'table'}
     goal2a.clear={'a':True, 'c':False,'b':True, 'd':False}
     goal2a.holding={'hand':False}
 
-    goal2a.display()
+    goal2a.display("Here is a description of the multigoal named: ")
     
     goal2b = gtpyhop.Multigoal('goal2b')
     goal2b.pos={'b':'c', 'a':'d'}
 
-    goal2b.display()
+    goal2b.display("Here is a description of the multigoal named: ")
     
     ### goal2b omits some of the conditions of goal2a,
     ### but those conditions will need to be achieved anyway.
@@ -188,7 +190,7 @@ Another initial state and two multigoals, goal2a and goal2b, such that
     th.pause(do_pauses)
 
 
-    print("\nRun find_plan on problem bw_large_d from the SHOP distribution:\n")
+    print("\n # Run find_plan on problem bw_large_d from the SHOP distribution:\n")
 
     state3 = gtpyhop.State('state3')
     state3.pos = {1:12, 12:13, 13:'table', 11:10, 10:5, 5:4, 4:14, 14:15, 15:'table', 9:8, 8:7, 7:6, 6:'table', 19:18, 18:17, 17:16, 16:3, 3:2, 2:'table'}
@@ -196,7 +198,7 @@ Another initial state and two multigoals, goal2a and goal2b, such that
     state3.clear.update({1:True, 11:True, 9:True, 19:True})
     state3.holding={'hand':False}
 
-    state3.display('Initial state is')
+    state3.display('Here is the description for the initial state named')
     
     goal3 = gtpyhop.Multigoal('goal3')
     goal3.pos = {15:13, 13:8, 8:9, 9:4, 4:'table', 12:2, 2:3, 3:16, 16:11, 11:7, 7:6, 6:'table'}
@@ -210,10 +212,10 @@ Another initial state and two multigoals, goal2a and goal2b, such that
     th.check_result(plan,expected)
     th.pause(do_pauses)
 
-    print("\nRun find_plan on problem BW-rand-50 from the IPC-2011 distribution.\n")
+    print("\n # Run find_plan on problem BW-rand-50 from the IPC-2011 distribution.\n")
 
      
-    print("- Define initial state for problem IPC2011BWrand50:")
+    print("-  # Define initial state for problem IPC2011BWrand50:")
      
     IPC2011BWrand50 = gtpyhop.State('problem BW-rand-50')
     IPC2011BWrand50.pos = {    
@@ -228,7 +230,7 @@ Another initial state and two multigoals, goal2a and goal2b, such that
     IPC2011BWrand50.clear.update({7:True, 10:True, 12:True, 13:True, 23:True})
     IPC2011BWrand50.holding = {'hand':False}
      
-    IPC2011BWrand50.display('Initial state is')
+    IPC2011BWrand50.display('Here is the description for the initial state named')
 
      
     IPC2011BWrand50Goal = gtpyhop.Multigoal('problem BW-rand-50')
@@ -252,19 +254,19 @@ Another initial state and two multigoals, goal2a and goal2b, such that
 Call run_lazy_lookahead on the following problem, with verbose=1:
 """)
 
-    state2.display(heading='Initial state is')
+    state2.display(heading='Here is the description for the initial state named')
     goal2b.display(heading='Goal is')
 
     new_state = gtpyhop.run_lazy_lookahead(state2, [('achieve', goal2b)])
 
     th.pause(do_pauses)
 
-    print("The goal should now be satisfied, so the planner should return an empty plan:\n")
+    print(" # The goal should now be satisfied, so the planner should return an empty plan:\n")
 
     plan = gtpyhop.find_plan(new_state, [('achieve', goal2b)])
     th.check_result(plan,[])
 
-    print("No more examples")
+    print(" # No more examples")
 
 
 # It's tempting to make the following call to main() unconditional, to run the
