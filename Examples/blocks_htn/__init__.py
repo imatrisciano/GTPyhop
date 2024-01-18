@@ -19,4 +19,4 @@ import sys
 sys.path.append('../')
 import gtpyhop
 
-from .examples import *
+#from .examples import *
