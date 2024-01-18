@@ -204,16 +204,18 @@ def _print_object(object, heading=None):
     if heading == None:
         heading = get_type(object)
     if object != False:
-        title = f"{heading} {object.__name__}:"
-        dashes = '-'*len(title)
-        print(title)
-        print(dashes)
+        title = f"{heading} {object.__name__}:\n"
+        object_string = title
+
         for (varname,val) in vars(object).items():
             if varname != '__name__':
-                print(f"  - {varname} = {val}")
-        print('')
+                object_string += f"  - {varname} = {val}\n"
+
+        object_string += "\n"
+
+        log_event(object_string)
     else: 
-        print('{heading} = False','\n')
+        log_event('{heading} = False','\n')
 
 
 # print_state and print_multigoal are identical except for their names.
@@ -239,12 +241,13 @@ class Domain():
     def __init__(self,domain_name):
         """domain_name is the name to use for the domain."""
 
-        global _domains, current_domain
+        global _domains, current_domain, event_callback
         
         self.__name__ = domain_name
 
         _domains.append(self)
         current_domain = self
+        event_callback = None
         
         # dictionary that maps each action name to the corresponding function
         self._action_dict = {}    
@@ -296,6 +299,14 @@ _domains = []
 
 
 current_domain = None
+event_callback = None
+
+
+def log_event(event: str) -> None:
+    print(event)
+    if event_callback is not None:
+        event_callback(event)
+
 """
 The Domain object that find_plan, run_lazy_lookahead, etc., will use.
 """
@@ -311,7 +322,7 @@ def print_domain(domain=None):
     """
     if domain == None:
         domain = current_domain
-    print(f'\nDomain name: {domain.__name__}')
+    log_event(f'\nHere is the Domain name: {domain.__name__}')
     print_actions(domain)
     print_commands(domain)
     print_methods(domain)
@@ -321,13 +332,14 @@ def print_actions(domain=None):
     if domain == None:
         domain = current_domain
     if domain._action_dict:
-        print('-- Actions:', ', '.join(domain._action_dict))
+        actions = ', '.join(domain._action_dict)
+        log_event(f'-- These are the available Actions: {actions}')
     else:
-        print('-- There are no actions --')
+        log_event('-- There are no actions --')
 
 def print_operators():
     if verbose > 0:
-        print("""
+        log_event("""
         >> print_operators exists to provide backward compatibility
         >> with Pyhop. In the future, please use print_actions instead.""")
     return print_actions()
@@ -337,42 +349,39 @@ def print_commands(domain=None):
     if domain == None:
         domain = current_domain
     if domain._command_dict:
-        print('-- Commands:', ', '.join(domain._command_dict))
+        log_event('-- Here are the available Commands:', ', '.join(domain._command_dict))
     else:
-        print('-- There are no commands --')
+        log_event('-- There are no commands --')
 
 def _print_task_methods(domain):
     """Print a table of the task_methods for each task"""
     if domain._task_method_dict:
-        print('')
-        print('Task name:         Relevant task methods:')
-        print('---------------    ----------------------')
+        log_event("Here are the task names followed by their relevant task methods:")
+
         for task in domain._task_method_dict:
-            print(f'{task:<19}' + ', '.join(    \
-                [f.__name__ for f in domain._task_method_dict[task]]))
-        print('')
+            task_methods = ', '.join([f.__name__ for f in domain._task_method_dict[task]])
+            log_event(f" - Task named '{task}' has the following methods: {task_methods}")
+        log_event('')
     else:
-        print('-- There are no task methods --')
+        log_event('-- There are no task methods --')
 
 def _print_unigoal_methods(domain):
     """Print a table of the unigoal_methods for each state_variable_name"""
     if domain._unigoal_method_dict:
-        print('State var name:    Relevant unigoal methods:')
-        print('---------------    -------------------------')
+        log_event("Here are the state variable names followed by their relevant unigoal methods:")
         for var in domain._unigoal_method_dict:
-            print(f'{var:<19}' + ', '.join( \
-                [f.__name__ for f in domain._unigoal_method_dict[var]]))
-        print('')
+            unigoal_methods = ', '.join([f.__name__ for f in domain._unigoal_method_dict[var]])
+            log_event(f" - State variable '{var}' has the following relevant unigoal methods: {unigoal_methods}")
     else:
-        print('-- There are no unigoal methods --')
+        log_event('-- There are no unigoal methods --')
 
 def _print_multigoal_methods(domain):
     """Print the names of all the multigoal_methods"""
     if domain._multigoal_method_list:
-        print('-- Multigoal methods:', ', '.join(  \
-                [f.__name__ for f in domain._multigoal_method_list]))
+        multigoal_methods_string = ', '.join([f.__name__ for f in domain._multigoal_method_list])
+        log_event(f'-- Multigoal methods: {multigoal_methods_string}')
     else:
-        print('-- There are no multigoal methods --')
+        log_event('-- There are no multigoal methods --')
     
 def print_methods(domain=None):
     """Print tables showing what all the methods are"""
@@ -407,7 +416,7 @@ def declare_actions(*actions):
 
 def declare_operators(*actions):
     if verbose > 0:
-        print("""
+        log_event("""
         >> declare_operators exists to provide backward compatibility
         >> with Pyhop. In the future, please use declare_actions instead.""")
     return declare_actions(*actions)
@@ -467,7 +476,7 @@ def declare_task_methods(task_name, *methods):
 
 def declare_methods(task, *methods):
     if verbose > 0:
-        print("""
+        log_event("""
         >> declare_methods exists to provide backward compatibility with
         >> Pyhop. In the future, please use declare_task_methods instead.""")
     return declare_task_methods(task, *methods)
@@ -628,7 +637,7 @@ def _m_verify_g(state, method, state_var, arg, desired_val, depth):
         raise Exception(f"depth {depth}: method {method} didn't achieve",
                 f"goal {state_var}[{arg}] = {desired_val}")
     if verbose >= 3:
-        print(f"depth {depth}: method {method} achieved",
+        log_event(f"depth {depth}: method {method} achieved",
                 f"goal {state_var}[{arg}] = {desired_val}")
     return []       # i.e., don't create any subtasks or subgoals
 
@@ -643,7 +652,7 @@ def _m_verify_mg(state, method, multigoal, depth):
         raise Exception(f"depth {depth}: method {method} " + \
                         f"didn't achieve {multigoal}]")
     if verbose >= 3:
-        print(f"depth {depth}: method {method} achieved {multigoal}")
+        log_event(f"depth {depth}: method {method} achieved {multigoal}")
     return []
 
 
@@ -659,16 +668,16 @@ def _apply_action_and_continue(state, task1, todo_list, plan, depth):
     recursively on todo_list.
     """
     if verbose >= 3:
-        print(f'depth {depth} action {task1}: ', end='')
+        log_event(f'depth {depth} action {task1}: ', end='')
     action = current_domain._action_dict[task1[0]]
     newstate = action(state.copy(),*task1[1:])
     if newstate:
         if verbose >= 3:
-            print('applied')
+            log_event('applied')
             newstate.display()
         return seek_plan(newstate, todo_list, plan+[task1], depth+1)
     if verbose >= 3:
-        print('not applicable')
+        log_event('not applicable')
     return False
 
 
@@ -683,24 +692,24 @@ def _refine_task_and_continue(state, task1, todo_list, plan, depth):
     """
     relevant = current_domain._task_method_dict[task1[0]]
     if verbose >= 3:
-        print(f'depth {depth} task {task1} methods {[m.__name__ for m in relevant]}')
+        log_event(f'depth {depth} task {task1} methods {[m.__name__ for m in relevant]}')
     for method in relevant:
         if verbose >= 3: 
-            print(f'depth {depth} trying {method.__name__}: ', end='')
+            log_event(f'depth {depth} trying {method.__name__}: ', end='')
         subtasks = method(state, *task1[1:])
         # Can't just say "if subtasks:", because that's wrong if subtasks == []
         if subtasks != False and subtasks != None:
             if verbose >= 3:
-                print('applicable')
-                print(f'depth {depth} subtasks: {subtasks}')
+                log_event('applicable')
+                log_event(f'depth {depth} subtasks: {subtasks}')
             result = seek_plan(state, subtasks+todo_list, plan, depth+1)
             if result != False and result != None:
                 return result
         else:
             if verbose >= 3:
-                print(f'not applicable')
+                log_event(f'not applicable')
     if verbose >= 3:
-        print(f'depth {depth} could not accomplish task {task1}')        
+        log_event(f'depth {depth} could not accomplish task {task1}')
     return False
 
 
@@ -715,24 +724,24 @@ def _refine_unigoal_and_continue(state, goal1, todo_list, plan, depth):
     If the call to seek_plan fails, go on to the next method in the list.
     """
     if verbose >= 3:
-        print(f'depth {depth} goal {goal1}: ', end='')
+        log_event(f'depth {depth} goal {goal1}: ', end='')
     (state_var_name, arg, val) = goal1
     if vars(state).get(state_var_name).get(arg) == val:
         if verbose >= 3:
-            print(f'already achieved')
+            log_event(f'already achieved')
         return seek_plan(state, todo_list, plan, depth+1)
     relevant = current_domain._unigoal_method_dict[state_var_name]
     if verbose >= 3:
-        print(f'methods {[m.__name__ for m in relevant]}')
+        log_event(f'methods {[m.__name__ for m in relevant]}')
     for method in relevant:
         if verbose >= 3: 
-            print(f'depth {depth} trying method {method.__name__}: ', end='')
+            log_event(f'depth {depth} trying method {method.__name__}: ', end='')
         subgoals = method(state,arg,val)
         # Can't just say "if subgoals:", because that's wrong if subgoals == []
         if subgoals != False and subgoals != None:
             if verbose >= 3:
-                print('applicable')
-                print(f'depth {depth} subgoals: {subgoals}')
+                log_event('applicable')
+                log_event(f'depth {depth} subgoals: {subgoals}')
             if verify_goals:
                 verification = [('_verify_g', method.__name__, \
                                  state_var_name, arg, val, depth)]
@@ -744,9 +753,9 @@ def _refine_unigoal_and_continue(state, goal1, todo_list, plan, depth):
                 return result
         else:
             if verbose >= 3:
-                print(f'not applicable')        
+                log_event(f'not applicable')
     if verbose >= 3:
-        print(f'depth {depth} could not achieve goal {goal1}')        
+        log_event(f'depth {depth} could not achieve goal {goal1}')
     return False
 
 
@@ -761,19 +770,19 @@ def _refine_multigoal_and_continue(state, goal1, todo_list, plan, depth):
     If the call to seek_plan fails, go on to the next method in the list.
     """
     if verbose >= 3:
-        print(f'depth {depth} multigoal {goal1}: ', end='')
+        log_event(f'depth {depth} multigoal {goal1}: ', end='')
     relevant = current_domain._multigoal_method_list
     if verbose >= 3:
-        print(f'methods {[m.__name__ for m in relevant]}')
+        log_event(f'methods {[m.__name__ for m in relevant]}')
     for method in relevant:
         if verbose >= 3: 
-            print(f'depth {depth} trying method {method.__name__}: ', end='')
+            log_event(f'depth {depth} trying method {method.__name__}: ', end='')
         subgoals = method(state,goal1)
         # Can't just say "if subgoals:", because that's wrong if subgoals == []
         if subgoals != False and subgoals != None:
             if verbose >= 3:
-                print('applicable')
-                print(f'depth {depth} subgoals: {subgoals}')
+                log_event('applicable')
+                log_event(f'depth {depth} subgoals: {subgoals}')
             if verify_goals:
                 verification = [('_verify_mg', method.__name__, goal1, depth)]
             else:
@@ -784,9 +793,9 @@ def _refine_multigoal_and_continue(state, goal1, todo_list, plan, depth):
                 return result
         else:
             if verbose >= 3:
-                print(f'not applicable')
+                log_event(f'not applicable')
     if verbose >= 3:
-        print(f'depth {depth} could not achieve multigoal {goal1}')        
+        log_event(f'depth {depth} could not achieve multigoal {goal1}')
     return False
 
 
@@ -805,16 +814,22 @@ def find_plan(state, todo_list):
     """
     if verbose >= 1: 
         todo_string = '[' + ', '.join([_item_to_string(x) for x in todo_list]) + ']'
-        print(f'FP> find_plan, verbose={verbose}:')
-        print(f'    state = {state.__name__}\n    todo_list = {todo_string}')
+        log_event(f'The robot is now attempting to find a plan starting from state {state.__name__} and trying to achieve the following todo_list: {todo_string}')
     result = seek_plan(state, todo_list, [], 0)
-    if verbose >= 1: print('FP> result =',result,'\n')
+    if verbose >= 1:
+        if result is False:
+            log_event("Could not find any plan.")
+        else:
+            if len(result) == 0:
+                log_event("The plan is empty. This means the goal is satisfied.")
+            else:
+                log_event(f"Here is the plan: {result}\n")
     return result
 
 
 def pyhop(state, todo_list):
     if verbose > 0:
-        print("""
+        log_event("""
         >> The function 'pyhop' exists to provide backward compatibility
         >> with Pyhop. In the future, please use find_plan instead.""")
     return find_plan(state, todo_list)
@@ -830,10 +845,10 @@ def seek_plan(state, todo_list, plan, depth):
     """
     if verbose >= 2: 
         todo_string = '[' + ', '.join([_item_to_string(x) for x in todo_list]) + ']'
-        print(f'depth {depth} todo_list ' + todo_string)
+        log_event(f'depth {depth} todo_list ' + todo_string)
     if todo_list == []:
         if verbose >= 3:
-            print(f'depth {depth} no more tasks or goals, return plan')
+            log_event(f'depth {depth} no more tasks or goals, return plan')
         return plan
     item1 = todo_list[0]
     ttype = get_type(item1)
@@ -886,17 +901,17 @@ def run_lazy_lookahead(state, todo_list, max_tries=10):
     """
     
     if verbose >= 1: 
-        print(f"RLL> run_lazy_lookahead, verbose = {verbose}, max_tries = {max_tries}")
-        print(f"RLL> initial state: {state.__name__}")
-        print('RLL> To do:', todo_list)
+        log_event(f"RLL> run_lazy_lookahead, verbose = {verbose}, max_tries = {max_tries}")
+        log_event(f"RLL> initial state: {state.__name__}")
+        log_event('RLL> To do:', todo_list)
 
     for tries in range(1,max_tries+1):
         if verbose >= 1: 
             ordinals = {1:'st',2:'nd',3:'rd'}
             if ordinals.get(tries):
-                print(f"RLL> {tries}{ordinals.get(tries)} call to find_plan:\n")
+                log_event(f"RLL> {tries}{ordinals.get(tries)} call to find_plan:\n")
             else:
-                print(f"RLL> {tries}th call to find_plan:\n")
+                log_event(f"RLL> {tries}th call to find_plan:\n")
         plan = find_plan(state, todo_list)
         if plan == False or plan == None:
             if verbose >= 1:
@@ -905,7 +920,7 @@ def run_lazy_lookahead(state, todo_list, max_tries=10):
             return state
         if plan == []:
             if verbose >= 1: 
-                print(f'RLL> Empty plan => success',
+                log_event(f'RLL> Empty plan => success',
                       f'after {tries} calls to find_plan.')
             if verbose >= 2: state.display(heading='> final state')
             return state
@@ -914,15 +929,16 @@ def run_lazy_lookahead(state, todo_list, max_tries=10):
             command_func = current_domain._command_dict.get(command_name)
             if command_func == None:
                 if verbose >= 1: 
-                    print(f'RLL> {command_name} not defined, using {action[0]} instead\n')
+                    #log_event(f'RLL> {command_name} not defined, using {action[0]} instead\n')
+                    pass
                 command_func = current_domain._action_dict.get(action[0])
                 
             if verbose >= 1:
-                print('RLL> Command:', [command_name] + list(action[1:]))
+                log_event('RLL> Command:', [command_name] + list(action[1:]))
             new_state = _apply_command_and_continue(state, command_func, action[1:])
             if new_state == False:
                 if verbose >= 1: 
-                    print(f'RLL> WARNING: command {command_name} failed; will call find_plan.')
+                    log_event(f'RLL> WARNING: command {command_name} failed; will call find_plan.')
                     break
             else:
                 if verbose >= 2: 
@@ -930,9 +946,9 @@ def run_lazy_lookahead(state, todo_list, max_tries=10):
                 state = new_state
         # if state != False then we're here because the plan ended
         if verbose >= 1 and state:
-            print(f'RLL> Plan ended; will call find_plan again.')
+            log_event(f'RLL> Plan ended; will call find_plan again.')
         
-    if verbose >= 1: print('RLL> Too many tries, giving up.')
+    if verbose >= 1: log_event('RLL> Too many tries, giving up.')
     if verbose >= 2: state.display(heading='RLL> final state')
     return state
 
@@ -943,22 +959,22 @@ def _apply_command_and_continue(state, command, args):
     function definition and calling it on the arguments.
     """
     if verbose >= 3:
-        print(f"_apply_command_and_continue {command.__name__}, args = {args}")
+        log_event(f"_apply_command_and_continue {command.__name__}, args = {args}")
     next_state = command(state.copy(),*args)
     if next_state:
         if verbose >= 3:
-            print('applied')
+            log_event('applied')
             next_state.display()
         return next_state
     else:
         if verbose >= 3:
-            print('not applicable')
+            log_event('not applicable')
         return False
 
 
 ###############################################################################
 # Print brief information about how to interpret the program's output
 
-print(f"\nImported GTPyhop version 1.0.")
-print(f"Messages from find_plan will be prefaced with 'FP>'.")
-print(f"Messages from run_lazy_lookahead will be prefaced with 'RLL>'.")
+log_event(f"\nImported GTPyhop version 1.0.")
+log_event(f"Messages from find_plan will be prefaced with 'FP>'.")
+log_event(f"Messages from run_lazy_lookahead will be prefaced with 'RLL>'.")
