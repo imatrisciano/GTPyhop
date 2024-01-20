@@ -1,11 +1,11 @@
 from llm_module import LLMModule
 import gtpyhop
+from Executioners.GenericRandomFailingExecutioner import GenericRandomFailingExecutioner
 
 the_domain = gtpyhop.Domain(__package__)  # must be defined before importing any actions
 
 from Examples.blocks_htn.methods import *
 from Examples.blocks_htn.actions import *
-
 
 llm = LLMModule(
     model_path="../../models/solar-10.7b-instruct-v1.0.Q5_K_M.gguf",
@@ -16,8 +16,11 @@ llm = LLMModule(
 def main():
     setup_llm()
     plan = generate_plan()
-    print(plan)
 
+    executioner = GenericRandomFailingExecutioner(log_event_callback=llm.log_event, post_action_callback=ask_question, failing_probability=1/6)
+    executioner.execute_plan(plan)
+
+    """
     #  Here is the plan: [('unstack', 'a', 'b'), ('putdown', 'a'), ('pickup', 'b'), ('stack', 'b', 'a'), ('pickup', 'c'), ('stack', 'c', 'b')]
     llm.log_event("\nThe executioner is now executing the plan")
 
@@ -29,11 +32,24 @@ def main():
     # llm.log_event("Could not find object 'c' in scene", print_event=True)
     #llm.log_event(" 5. action ('pickup', 'c') executed successfully", print_event=True)
     #llm.log_event(" 6. action ('stack', 'c', 'b') executed successfully", print_event=True)
+    """
 
+    ask_question()
+    print("Execution completed. Now exiting.")
+
+
+def ask_question():
     while True:
+        print("===================================================")
+        print(" ## Enter a question or leave empty to continue ## ")
         question = input(" > Question: ")  # Example: "What is the current goal? Can you please describe the plan?"
+
+        if len(question) == 0:
+            return  # exit the loop
+
         print("Generating the answer...")
         llm.prompt(question, max_tokens=8192)
+
         print()
         print()
 
