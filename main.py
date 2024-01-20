@@ -1,6 +1,7 @@
 from llm_module import LLMModule
 import gtpyhop
 from Executioners.GenericRandomFailingExecutioner import GenericRandomFailingExecutioner
+from Executioners.BlocksFailingExecutioner import BlocksFailingExecutioner
 
 the_domain = gtpyhop.Domain(__package__)  # must be defined before importing any actions
 
@@ -17,7 +18,8 @@ def main():
     setup_llm()
     plan = generate_plan()
 
-    executioner = GenericRandomFailingExecutioner(log_event_callback=llm.log_event, post_action_callback=ask_question, failing_probability=1/6)
+    #executioner = GenericRandomFailingExecutioner(log_event_callback=llm.log_event, post_action_callback=ask_question, failing_probability=1/6)
+    executioner = BlocksFailingExecutioner(log_event_callback=llm.log_event, post_action_callback=ask_question, failing_probability=1/6)
     executioner.execute_plan(plan)
 
     """
