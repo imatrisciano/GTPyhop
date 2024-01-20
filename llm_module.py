@@ -7,6 +7,7 @@ class LLMModule:
     model_path: str
     context_size: int
     n_threads: int
+    messages_history: list
 
     _llm = None
     _system_message: str = ""
@@ -16,6 +17,7 @@ class LLMModule:
         self.model_path = model_path
         self.n_threads = n_threads
         self.context_size = context_size
+        self.messages_history = []
 
     def load(self) -> None:
         print("Loading LLM module...")
@@ -63,12 +65,21 @@ class LLMModule:
         return (
                 "### System:\n" +
                 self._generate_complete_system_prompt() +
+                self._get_messages_history() +
                 "\n\n### User:\n"
                 + question +
                 "\n\n### Assistant:\n")
 
+    def _get_messages_history(self) -> str:
+        text = ""
+        for message in self.messages_history:
+            question = message["question"]
+            answer = message["answer"]
+            text += f"\n\n### User:\n{question}\n\n### Assistant:\n{answer}"
+        return text
+
     # Prompts the LLM and prints the output
-    def prompt(self, question: str, max_tokens=128) -> None:
+    def prompt(self, question: str, max_tokens=128, memorize_message=False) -> None:
         # generate the prompt
         prompt: str = self._generate_complete_prompt(question)
 
@@ -76,11 +87,22 @@ class LLMModule:
         if len(prompt) > self.context_size:
             print("WARN: current log is bigger than the specified context length, answer will be sub-optimal")
 
+        message = {
+            "question": question,
+            "answer": ""
+        }
+
         # generate a streamed output
         model_output = self._llm.create_completion(prompt, stream=True, max_tokens=max_tokens)
 
         # print the streamed result
         for item in model_output:
-            print(item['choices'][0]['text'], end='')
+            new_text = item['choices'][0]['text']
+            message["answer"] += new_text
+            print(new_text, end='')
+
+        if memorize_message:
+            self.messages_history.append(message)
+
         print()
 
