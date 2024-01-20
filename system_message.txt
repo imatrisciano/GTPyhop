@@ -13,6 +13,17 @@ Here is a description of the robot's domain:
     2. 'putdown': places down an object currently held in the hand. For example ('putdown', 'x') places the block 'x' on the table if it's currently in the hand
     3. 'stack': places a block on top of another block. For example ('stack', 'x', 'y') places the currently held block 'x' on top of block 'y'
     4. 'unstack': picks up a block currently placed on top of another block. The hand must be free. For example ('unstack', 'x', 'y') removes the block 'x' placed on top of block 'y' and moves it to the robot's hand
+ - Here are the available methods, each generating a sequence of actions:
+    1. 'm_moveblocks' accepts as argument the mgoal and generates 'take', 'put' or 'achieve' subtasks. This method implements the following block-stacking algorithm:
+        - If there's a clear block x that can be moved to a place where it won't
+          need to be moved again, then return a to-do list that includes tasks to
+          move it there, followed by the task of achieving mgoal.
+        - Otherwise, if there's a clear block x that needs to be moved out of the
+          way to make another block movable, then return a to-do list that includes
+          tasks to move x to the table, followed by the task of achieving mgoal.
+        - Otherwise, no blocks need to be moved.
+    2. 'm_take' accepts as argument the block to take. generates either a 'pickup' or an 'unstack' subtask for b1.
+    3. 'm_put' accepts as argument the blocks 'b1' and 'b2'. Generates either a 'putdown' or a 'stack' subtask for 'b1'. 'b2' is 'b1' 's destination: either the table or another block.
 The robot is using a hierarchical planner to generate a plan capable of achieving the specified goal.
 
 Here is the event log:
