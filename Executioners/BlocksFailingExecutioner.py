@@ -3,7 +3,7 @@ import random
 
 """
 Executes a plan step by step. 
-The actions 'pickup' and 'putdown' may fail with a set probability.
+The actions 'pickup' and 'stack' may fail with a set probability.
 When an action fails a message is logged with the reason the action failed and the plan execution is stopped.
 """
 
@@ -39,7 +39,7 @@ class BlocksFailingExecutioner(AExecutioner):
 
     def _can_action_fail(self, action):
         action_name = action[0]
-        return action_name in ['pickup', 'putdown']
+        return action_name in ['pickup', 'stack']
 
     def _should_action_fail(self, action):
         random_number = random.random() # number in [0, 1)
@@ -51,7 +51,7 @@ class BlocksFailingExecutioner(AExecutioner):
             # pickup action failed
             # let's pretend we noticed the robot's hand was empty after attempting to pick something up
             self.log_event("No object detected in the robot's hand after a pickup was executed")
-        elif action_name == 'putdown':
-            # putdown action failed
+        elif action_name == 'stack':
+            # stack action failed
             # let's pretend we have a stack height sensor and it's giving us some wrong value
-            self.log_event("Unexpected stack height value after a putdown action. The stack height did not increase.")
+            self.log_event("Unexpected stack height value after a stack action. The stack height did not increase.")
