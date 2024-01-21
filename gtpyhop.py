@@ -215,7 +215,7 @@ def _print_object(object, heading=None):
 
         log_event(object_string)
     else: 
-        log_event('{heading} = False','\n')
+        log_event('{heading} = False')
 
 
 # print_state and print_multigoal are identical except for their names.
