@@ -50,7 +50,7 @@ def ask_question():
             return  # exit the loop
 
         print("Generating the answer...")
-        llm.prompt(question, max_tokens=8192)
+        llm.prompt(question, max_tokens=8192, memorize_message=True)
 
         print()
         print()
