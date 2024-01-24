@@ -25,7 +25,8 @@ class LLMModule:
             model_path=self.model_path,
             n_threads=self.n_threads,
             n_ctx=self.context_size,
-            n_gpu_layers=-1)
+            n_gpu_layers=-1,
+            verbose=False)
 
         if self._llm is not None:
             print("Model loaded")
