@@ -15,12 +15,34 @@ llm = LLMModule(
     context_size=16 * 1024)
 
 
+class Colours:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+    @staticmethod
+    def print_coloured(text: str, colour):
+        print(colour + text + Colours.ENDC)
+
+    @staticmethod
+    def set_colour(colour):
+        print(colour, end='')
+
+    @staticmethod
+    def reset():
+        print(Colours.ENDC, end='')
+
+
 def main():
     initial_state = generate_initial_state()
     setup_llm()
     plan = generate_plan(initial_state)
-
-
 
     #executioner = GenericRandomFailingExecutioner(log_event_callback=llm.log_event, post_action_callback=ask_question, failing_probability=1/6)
     #executioner = BlocksFailingExecutioner(log_event_callback=llm.log_event, post_action_callback=ask_question, failing_probability=1/6)
@@ -64,18 +86,23 @@ def generate_initial_state():
     }
     return initial_state
 
+
 def ask_question():
     while True:
+        Colours.set_colour(Colours.HEADER)
         print("===================================================")
         print(" ## Enter a question or leave empty to continue ## ")
+        Colours.set_colour(Colours.OKBLUE)
         question = input(" > Question: ")  # Example: "What is the current goal? Can you please describe the plan?"
 
         if len(question) == 0:
+            Colours.reset()
             return  # exit the loop
 
-        print("Generating the answer...")
+        Colours.print_coloured("Generating the answer...", Colours.HEADER)
+        Colours.set_colour(Colours.OKCYAN)
         llm.prompt(question, max_tokens=8192, memorize_message=True)
-
+        Colours.reset()
         print()
         print()
 
