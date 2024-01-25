@@ -68,7 +68,7 @@ def generate_initial_state():
         'a': True  # 'a' is clear
     }
     initial_state.holding = {
-        'hand': False
+        'hand': False  # the hand is clear
     }
     return initial_state
 
