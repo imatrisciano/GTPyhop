@@ -128,7 +128,7 @@ class BlocksFailingExecutionerWithStateTracking(AExecutioner):
 
     """
     Chooses a random block from the list of Clear blocks, excluding a specified block name
-    If no clear block is found, 'table' is retuned
+    If no clear block is found, 'table' is returned
     """
     def _find_random_available_spot(self, block_to_exclude) -> str:
         # choose blocks that are Clear and that are not equal to 'block_to_exclude'
