@@ -81,7 +81,7 @@ def ask_question():
         Colours.set_colour(Colours.OKBLUE)
         question = input(" > Question: ")  # Example: "What is the current goal? Can you please describe the plan?"
 
-        if len(question) == 0:
+        if len(question.strip()) == 0:
             Colours.reset()
             return  # exit the loop
 
