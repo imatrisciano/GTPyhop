@@ -13,7 +13,9 @@ class GenericRandomFailingExecutioner(AExecutioner):
         super().__init__(log_event_callback, post_action_callback)
         self.failing_probability = failing_probability
 
-    def execute_plan(self, plan: list):
+    def execute_plan(self, plan: list) -> bool:
+        """ Executes the given plan.
+        Returns True if the execution was successful, False if it failed"""
         super().execute_plan(plan)
 
         number_of_actions = len(plan)
@@ -25,7 +27,7 @@ class GenericRandomFailingExecutioner(AExecutioner):
                 # Action failed
                 self.log_event(f" {index+1}. The action {action} failed to execute")
                 self.log_event("Plan execution stopped")
-                return
+                return False
             else:
                 # Action executed successfully
                 self.log_event(f" {index+1}. The action {action} was executed correctly")
@@ -33,6 +35,7 @@ class GenericRandomFailingExecutioner(AExecutioner):
             self.on_post_action()
 
         self.log_event("The plan was executed correctly")
+        return True
 
     def _should_action_fail(self):
         random_number = random.random() # number in [0, 1)

@@ -11,6 +11,7 @@ When an action fails a message is logged with the reason the action failed and t
 class BlocksFailingExecutionerWithStateTracking(AExecutioner):
     failing_probability = None
     state = None
+    failed_plan_counter: int = 0
 
     def __init__(self, log_event_callback, failing_probability: float, initial_state, post_action_callback=None):
         super().__init__(log_event_callback, post_action_callback)
@@ -20,7 +21,11 @@ class BlocksFailingExecutionerWithStateTracking(AExecutioner):
     def get_current_state(self):
         return self.state.copy()
 
-    def execute_plan(self, plan: list, log_state: bool = False):
+    def execute_plan(self, plan: list, log_state: bool = False) -> bool:
+        """
+        Executes the given plan.
+        Returns True if the execution was successful, False if it failed
+        """
         super().execute_plan(plan)
 
         number_of_actions = len(plan)
@@ -29,17 +34,19 @@ class BlocksFailingExecutionerWithStateTracking(AExecutioner):
         # Foreach action in the plan
         for index, action in enumerate(plan):
             action_success = self._execute_action(index, action)
-            self.state.__name__ = f"state_after_action_{index + 1}"
+            self.state.__name__ = f"{self.failed_plan_counter}-state_after_action_{index + 1}"
 
             if log_state:
                 self.state.display("Here is the state after the action was executed:")
 
             if not action_success:
-                return
+                self.failed_plan_counter += 1
+                return False
 
             self.on_post_action()
 
         self.log_event("The plan was executed correctly")
+        return True
 
     def _execute_action(self, index, action) -> bool:
         action_failed = self._can_action_fail(action) and self._should_action_fail(action)

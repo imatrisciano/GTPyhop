@@ -49,7 +49,20 @@ def main():
     executioner = BlocksFailingExecutionerWithStateTracking(log_event_callback=llm.log_event, initial_state=initial_state,
                                                             post_action_callback=ask_question, failing_probability=1/2)
 
-    executioner.execute_plan(plan, log_state=True)
+    plan_executed: bool = executioner.execute_plan(plan, log_state=True)
+
+    # If the execution failed, keep retrying
+    while not plan_executed:
+        llm.log_event("Plan execution failed, the system will now replan")
+
+        # get the current state from the executioner and use it as the starting point for a replanning
+        initial_state = executioner.get_current_state()
+
+        # generate a new plan starting from the current state
+        plan = generate_plan(initial_state)
+
+        # execute the new plan
+        plan_executed = executioner.execute_plan(plan, log_state=True)
 
     ask_question()
     print("Execution completed. Now exiting.")
