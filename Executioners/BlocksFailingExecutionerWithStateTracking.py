@@ -69,8 +69,6 @@ class BlocksFailingExecutionerWithStateTracking(AExecutioner):
         else:
             raise Exception(f"Unknown action name {action_name}")
 
-
-
     def _can_action_fail(self, action):
         action_name = action[0]
         return action_name in ['pickup', 'stack']

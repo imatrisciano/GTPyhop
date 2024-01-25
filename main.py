@@ -51,20 +51,6 @@ def main():
 
     executioner.execute_plan(plan, log_state=True)
 
-    """
-    #  Here is the plan: [('unstack', 'a', 'b'), ('putdown', 'a'), ('pickup', 'b'), ('stack', 'b', 'a'), ('pickup', 'c'), ('stack', 'c', 'b')]
-    llm.log_event("\nThe executioner is now executing the plan")
-
-    llm.log_event(" 1. action ('unstack', 'a', 'b') executed successfully", print_event=True)
-    llm.log_event(" 2. action ('putdown', 'a') executed successfully", print_event=True)
-    llm.log_event(" 3. action ('pickup', 'b') executed successfully", print_event=True)
-    llm.log_event(" 4. action ('stack', 'b', 'a') executed successfully", print_event=True)
-    llm.log_event(" 5. action ('pickup', 'c') failed execution", print_event=True)
-    # llm.log_event("Could not find object 'c' in scene", print_event=True)
-    #llm.log_event(" 5. action ('pickup', 'c') executed successfully", print_event=True)
-    #llm.log_event(" 6. action ('stack', 'c', 'b') executed successfully", print_event=True)
-    """
-
     ask_question()
     print("Execution completed. Now exiting.")
 
