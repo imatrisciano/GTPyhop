@@ -29,6 +29,7 @@ class BlocksFailingExecutionerWithStateTracking(AExecutioner):
         # Foreach action in the plan
         for index, action in enumerate(plan):
             action_success = self._execute_action(index, action)
+            self.state.__name__ = f"state_after_action_{index + 1}"
 
             if log_state:
                 self.state.display("Here is the state after the action was executed:")
