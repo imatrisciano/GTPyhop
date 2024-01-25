@@ -1,6 +1,8 @@
 from Executioners.AExecutioner import AExecutioner
 import random
 
+from Executioners.ExecutionExceptions import *
+
 """
 Executes a plan step by step. 
 The actions 'pickup' and 'stack' may fail with a set probability.
@@ -49,85 +51,94 @@ class BlocksFailingExecutionerWithStateTracking(AExecutioner):
         return True
 
     def _execute_action(self, index, action) -> bool:
-        action_failed = self._can_action_fail(action) and self._should_action_fail(action)
-        self._update_state(action, action_failed)
+        action_name = action[0]
+        fail_reason: str = ""
 
-        if action_failed:
-            # Action failed
-            self.log_event(f" {index + 1}. The action {action} failed to execute")
-            self._fail_action(action)
-            self.log_event("Plan execution stopped")
-            return False
-        else:
-            # Action executed successfully
+        try:
+            if action_name == 'pickup':
+                self._domain_action_pickup(action[1])
+            elif action_name == 'unstack':
+                self._domain_action_unstack(action[1], action[2])
+            elif action_name == 'putdown':
+                self._domain_action_putdown(action[1])
+            elif action_name == 'stack':
+                self._domain_action_stack(action[1], action[2])
+            else:
+                raise Exception(f"Unknown action name {action_name}")
+
             self.log_event(f" {index + 1}. The action {action} was executed correctly")
             return True
+        except PreconditionsNotMetException as exc:
+            fail_reason = f"Preconditions are not met: {str(exc)}"
+        except ExecutionFailedException as exc:
+            fail_reason = f"Action execution failed: {str(exc)}"
 
-    def _update_state(self, action, action_failed: bool):
-        action_name = action[0]
-
-        if action_name == 'pickup':
-            self._domain_action_pickup(action[1], action_failed)
-        elif action_name == 'unstack':
-            self._domain_action_unstack(action[1], action[2])
-        elif action_name == 'putdown':
-            self._domain_action_putdown(action[1])
-        elif action_name == 'stack':
-            self._domain_action_stack(action[1], action[2], action_failed)
-        else:
-            raise Exception(f"Unknown action name {action_name}")
+        self.log_event(f" {index + 1}. The action {action} failed to execute. Reason: {fail_reason}")
+        self.log_event("Plan execution stopped")
+        return False
 
     def _can_action_fail(self, action):
         action_name = action[0]
         return action_name in ['pickup', 'stack']
 
-    def _should_action_fail(self, action):
+    def _should_action_fail(self):
         random_number = random.random()  # number in [0, 1)
         return random_number < self.failing_probability
 
-    def _fail_action(self, action):
-        action_name = action[0]
-        if action_name == 'pickup':
-            # pickup action failed
-            # let's pretend we noticed the robot's hand was empty after attempting to pick something up
-            self.log_event("No object detected in the robot's hand after a pickup was executed")
-        elif action_name == 'stack':
-            # stack action failed
-            # let's pretend we have a stack height sensor and it's giving us some wrong value
-            self.log_event("Unexpected stack height value after a stack action. The stack height did not increase.")
+    def _domain_action_pickup(self, x):
+        PreconditionsNotMetException.check_predicate(self.state.pos[x] == 'table', f"Block '{x}' is not on the table")
+        PreconditionsNotMetException.check_predicate(self.state.clear[x] is True, f"Block '{x}' is not clear")
+        PreconditionsNotMetException.check_predicate(self.state.holding['hand'] is False, f"Block '{x}' is not being held in the hand")
 
-    def _domain_action_pickup(self, x, action_failed: bool):
         # if the action fails the item will not move (state remains unchanged)
-        if self.state.pos[x] == 'table' and self.state.clear[x] == True and self.state.holding['hand'] == False and not action_failed:
-            self.state.pos[x] = 'hand'
-            self.state.clear[x] = False
-            self.state.holding['hand'] = x
+        if self._should_action_fail():
+            # let's pretend we noticed the robot's hand was empty after attempting to pick something up
+            raise ExecutionFailedException(f"No object detected in the robot's hand after a pickup for block '{x}' was executed")
+
+        self.state.pos[x] = 'hand'
+        self.state.clear[x] = False
+        self.state.holding['hand'] = x
 
     def _domain_action_unstack(self, b1, b2):
-        if self.state.pos[b1] == b2 and b2 != 'table' and self.state.clear[b1] == True and self.state.holding['hand'] == False:
-            self.state.pos[b1] = 'hand'
-            self.state.clear[b1] = False
-            self.state.holding['hand'] = b1
-            self.state.clear[b2] = True
+        PreconditionsNotMetException.check_predicate(self.state.pos[b1] == b2, f"Block '{b1}' is not on top of block '{b2}'")
+        PreconditionsNotMetException.check_predicate(b2 != 'table', f"Block {b2} is the table")
+        PreconditionsNotMetException.check_predicate(self.state.clear[b1] is True, f"Block '{b1}' is not clear and can't be picked up")
+        PreconditionsNotMetException.check_predicate(self.state.holding['hand'] is False, f"The robot's hand is not free")
+
+        self.state.pos[b1] = 'hand'
+        self.state.clear[b1] = False
+        self.state.holding['hand'] = b1
+        self.state.clear[b2] = True
 
     def _domain_action_putdown(self, b1):
-        if self.state.pos[b1] == 'hand':
-            self.state.pos[b1] = 'table'
-            self.state.clear[b1] = True
-            self.state.holding['hand'] = False
+        PreconditionsNotMetException.check_predicate(self.state.pos[b1] == 'hand', f"Block '{b1}' is not in the robot's hand")
+
+        self.state.pos[b1] = 'table'
+        self.state.clear[b1] = True
+        self.state.holding['hand'] = False
 
     # put b1 on top of b2
-    def _domain_action_stack(self, b1, b2, action_failed):
-        # if the action fails, the object will be put in a different location
-        if self.state.pos[b1] == 'hand' and self.state.clear[b2] is True:
-            if action_failed:
-                # if the action fails, put the block down on a wrong spot
-                # choose the spot randomly from the available ones except b2
-                # if no clear block is found, than 'table' is returned
-                wrong_spot = self._find_random_available_spot(block_to_exclude=b2)
-                print(f" ###> Action 'stack' failed, putting '{b1}' on top of '{wrong_spot}' instead of '{b2}'")
-                b2 = wrong_spot
+    def _domain_action_stack(self, b1, b2):
+        PreconditionsNotMetException.check_predicate(self.state.pos[b1] == 'hand', f"Block '{b1}' is not in the robot's hand")
+        PreconditionsNotMetException.check_predicate(self.state.clear[b2] is True, f"Block '{b2}' is not clear and thus it's not accessible")
 
+        # if the action fails, the object will be put in a different location
+        if self._should_action_fail():
+            # if the action fails, put the block down on a wrong spot
+            # choose the spot randomly from the available ones except b2
+            # if no clear block is found, than 'table' is returned
+            wrong_spot = self._find_random_available_spot(block_to_exclude=b2)
+            print(f" ###> Action 'stack' failed, putting '{b1}' on top of '{wrong_spot}' instead of '{b2}'")
+            b2 = wrong_spot
+
+            self.state.pos[b1] = b2
+            self.state.clear[b1] = True
+            self.state.holding['hand'] = False
+            self.state.clear[b2] = False
+
+            # let's pretend we have a stack height sensor, and it's giving us some wrong value
+            raise ExecutionFailedException("Unexpected stack height value after a stack action. The stack height did not increase.")
+        else:
             self.state.pos[b1] = b2
             self.state.clear[b1] = True
             self.state.holding['hand'] = False
